@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Bütçe Pro</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --card-2: #1f2937;
+      --line: #334155;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent-2: #38bdf8;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --radius: 18px;
+      --shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: linear-gradient(180deg, #020617 0%, #0f172a 100%); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+    body { min-height: 100vh; }
+    .app { max-width: 900px; margin: 0 auto; padding: 18px 14px 40px; }
+    .hero { padding: 18px; background: rgba(17,24,39,.75); backdrop-filter: blur(12px); border: 1px solid rgba(148,163,184,.15); border-radius: 22px; box-shadow: var(--shadow); }
+    .title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    h1 { font-size: 1.35rem; margin: 0; }
+    .sub { margin-top: 8px; color: var(--muted); font-size: .95rem; line-height: 1.35; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .pill {
+      background: rgba(34,197,94,.12);
+      color: #bbf7d0;
+      border: 1px solid rgba(34,197,94,.25);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: .88rem;
+    }
+    .grid { display: grid; gap: 14px; margin-top: 16px; }
+    .grid.top { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .top-summary {
+      transition: transform .34s cubic-bezier(0.22, 1, 0.36, 1), opacity .24s ease, max-height .34s cubic-bezier(0.22, 1, 0.36, 1), margin .34s cubic-bezier(0.22, 1, 0.36, 1);
+      transform: translateY(0);
+      opacity: 1;
+      max-height: 900px;
+      overflow: hidden;
+    }
+    .top-summary.hidden {
+      transform: translateY(-26px);
+      opacity: 0;
+      max-height: 0;
+      margin-top: 0;
+      pointer-events: none;
+    }
+    .card {
+      background: rgba(17,24,39,.9);
+      border: 1px solid rgba(148,163,184,.14);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card h2 { font-size: 1rem; margin: 0; }
+    .card-head { padding: 14px 16px; border-bottom: 1px solid rgba(148,163,184,.12); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .card-body { padding: 14px 16px; }
+    .stat { display: grid; gap: 8px; }
+    .stat .label { color: var(--muted); font-size: .88rem; }
+    .stat .value { font-size: 1.45rem; font-weight: 700; }
+    .tabs { position: relative; z-index: 20; padding-top: 12px; margin-top: 12px; margin-bottom: 12px; display: flex; justify-content: center; }
+    .tab-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15,23,42,.55);
+      border: 1px solid rgba(148,163,184,.12);
+      border-radius: 999px;
+      padding: 4px;
+      backdrop-filter: blur(10px);
+    }
+    .tab-scroll { display: inline-flex; gap: 8px; padding-bottom: 6px; justify-content: center; }
+    .tab-arrow {
+      width: 40px;
+      min-width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.7);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 800;
+      user-select: none;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+    .tab-arrow:active { transform: scale(.96); }
+    .tab-arrow:hover { background: rgba(30,41,59,.95); border-color: rgba(56,189,248,.35); }
+    .tab {
+      font-size: 0.85rem;
+      padding: 8px 10px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(15,23,42,.88);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 999px;
+      white-space: nowrap;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tab.active { background: rgba(56,189,248,.15); border-color: rgba(56,189,248,.35); color: #bae6fd; box-shadow: 0 8px 18px rgba(56,189,248,.12); }
+    .section { display: none; margin-top: 14px; opacity: 0; }
+    .section.active { display: block; opacity: 1; }
+    .section.exit-left { display: block; animation: pageExitLeft 0.35s ease forwards; }
+    .section.exit-right { display: block; animation: pageExitRight 0.35s ease forwards; }
+    .section.enter-left { display: block; animation: pageEnterLeft 0.35s ease; }
+    .section.enter-right { display: block; animation: pageEnterRight 0.35s ease; }
+    @keyframes pageEnterRight { from { transform: translateX(40px); opacity: 0.6; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes pageEnterLeft { from { transform: translateX(-40px); opacity: 0.6; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes pageExitLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-40px); opacity: 0; } }
+    @keyframes pageExitRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(40px); opacity: 0; } }
+    .row-item {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) 110px;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(148,163,184,.1);
+      align-items: center;
+    }
+    .row-item:last-child { border-bottom: 0; }
+    .name { font-weight: 600; }
+    .meta { color: var(--muted); font-size: .82rem; margin-top: 4px; }
+    .input, .readonly {
+      width: 100%;
+      background: rgba(30,41,59,.95);
+      border: 1px solid rgba(148,163,184,.18);
+      border-radius: 12px;
+      color: var(--text);
+      padding: 11px 12px;
+      font-size: 1rem;
+      min-height: 44px;
+    }
+    .readonly { display: flex; align-items: center; justify-content: flex-end; font-weight: 700; }
+    .summary-box {
+      background: rgba(15,23,42,.95);
+      border: 1px solid rgba(148,163,184,.14);
+      border-radius: 16px;
+      padding: 14px;
+      display: grid;
+      gap: 8px;
+    }
+    .summary-line { display: flex; justify-content: space-between; gap: 12px; color: var(--text); }
+    .summary-line .k { color: var(--muted); }
+    .summary-line.total { font-weight: 800; font-size: 1.05rem; padding-top: 8px; border-top: 1px solid rgba(148,163,184,.12); }
+    .helper { color: var(--muted); font-size: .84rem; line-height: 1.35; }
+    .section-actions { display:flex; justify-content:flex-end; margin-bottom:12px; }
+    .icon-btn { border: 1px solid rgba(148,163,184,.14); border-radius: 14px; min-height: 46px; padding: 0 14px; font-weight: 800; font-size: .95rem; cursor: pointer; background: rgba(30,41,59,.96); color: var(--text); box-shadow: 0 10px 24px rgba(0,0,0,.18); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .icon-btn.danger { color: #fecaca; border-color: rgba(239,68,68,.22); }
+    .item-toolbar { display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
+    .item-move-group { display:flex; gap:8px; }
+    .move-btn { min-width: 46px; padding: 0 12px; }
+    .item-toolbar .input { flex:1; min-width: 180px; }
+    .mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    .triple-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+    .danger { color: #fecaca; }
+    .success { color: #bbf7d0; }
+    .footer-actions {
+      position: static;
+      left: 0;
+      right: 0;
+      padding: 16px 12px 20px;
+      background: linear-gradient(180deg, rgba(2,6,23,0) 0%, rgba(2,6,23,.92) 24%, rgba(2,6,23,1) 100%);
+    }
+    .footer-wrap {
+      max-width: 560px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 12px;
+    }
+    button.action {
+      border: 1px solid rgba(148,163,184,.14);
+      border-radius: 18px;
+      min-height: 54px;
+      font-weight: 800;
+      font-size: .98rem;
+      cursor: pointer;
+      background: rgba(30,41,59,.96);
+      color: var(--text);
+      box-shadow: 0 14px 30px rgba(0,0,0,.24);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+    }
+    button.action:hover {
+      transform: translateY(-1px);
+      border-color: rgba(56,189,248,.24);
+      box-shadow: 0 18px 34px rgba(0,0,0,.28);
+    }
+    button.action:active {
+      transform: scale(.985);
+    }
+    button.primary {
+      background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+      color: #052e16;
+      border-color: rgba(34,197,94,.18);
+    }
+    button.secondary { background: #38bdf8; color: #082f49; }
+    details { background: rgba(15,23,42,.95); border: 1px solid rgba(148,163,184,.14); border-radius: 16px; padding: 12px 14px; }
+    summary { cursor: pointer; font-weight: 700; }
+    @media (max-width: 740px) {
+      .grid.top, .mini-grid, .triple-grid { grid-template-columns: 1fr; }
+      .row-item { grid-template-columns: 1fr; }
+      .footer-wrap { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      button.action { min-height: 50px; font-size: .94rem; }
+    }
+    @media (max-width: 420px) {
+      .footer-wrap { grid-template-columns: 1fr; }
+      .tab-nav { width: 100%; justify-content: center; }
+      .tab-arrow { width: 36px; min-width: 36px; height: 36px; }
+      .tab-scroll { overflow-x: auto; max-width: calc(100vw - 120px); scrollbar-width: none; justify-content: center; }
+      .tab-scroll::-webkit-scrollbar { display: none; }
+    }
+  
+    #install-btn[hidden] { display:none !important; }
+    .section-hero {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+    .top-summary > .section-hero {
+      grid-column: 1 / -1;
+    }
+  
+
+</style>
+</head>
+<body>
+  <div class="app">
+
+    
+
+
+    <div class="grid top top-summary" id="top-summary">
+      <div class="hero section-hero" style="margin-bottom: 14px;">
+      <div class="title">
+        <h1>Bütçe Pro</h1>
+      </div>
+      <button id="install-btn" class="action secondary" hidden style="margin-top:10px; width:100%;">
+        📲 Ana Ekrana Ekle
+      </button>
+    </div>
+      <div class="card">
+        <div class="card-head"><h2>Genel Özet</h2></div>
+        <div class="card-body triple-grid">
+          <div class="stat"><div class="label">Günlük Taksit</div><div class="value" id="sum-daily-installment">₺0</div></div>
+          <div class="stat"><div class="label">Günlük Faiz</div><div class="value" id="sum-daily-interest">₺0</div></div>
+          <div class="stat"><div class="label">Günlük Toplam</div><div class="value" id="sum-daily-total">₺0</div></div>
+          <div class="stat"><div class="label">Aylık Hedef</div><div class="value" id="sum-monthly-target">₺0</div></div>
+          <div class="stat"><div class="label">Haftalık Hedef</div><div class="value" id="sum-weekly-target">₺0</div></div>
+          
+        </div>
+      </div>
+
+      <div class="tabs tabs-shell summary-tabs-shell">
+        <div class="tab-nav">
+          <button class="tab-arrow nav-prev" aria-label="Sola kaydır">&#8249;</button>
+          <div class="tab-scroll"></div>
+          <button class="tab-arrow nav-next" aria-label="Sağa kaydır">&#8250;</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Hızlı Bilgiler</h2><span class="helper">Canlı</span></div>
+        <div class="card-body">
+          <div class="summary-box">
+            <div class="summary-line"><span class="k">Toplam Taksit Gideri</span><strong id="quick-installment">₺0</strong></div>
+            <div class="summary-line"><span class="k">Esnek Hesap Borcu</span><strong id="quick-eh">₺0</strong></div>
+            <div class="summary-line"><span class="k">Kredi Kartı Borcu</span><strong id="quick-kk">₺0</strong></div>
+            <div class="summary-line"><span class="k">Kullanılabilir Limit</span><strong id="quick-limit">₺0</strong></div>
+            <div class="summary-line total"><span class="k">Faiz Toplamı</span><strong id="quick-interest">₺0</strong></div>
+          </div>
+</div>
+      </div>
+    </div>
+
+    <section class="section" data-section="ozet" style="display:none;">
+
+      
+      <div class="hero section-hero" style="margin-bottom: 14px;">
+        <div class="title">
+          <h1>Bütçe Pro</h1>
+        </div>
+      </div>
+<div class="tabs tabs-shell">
+        <div class="tab-nav">
+          <button class="tab-arrow nav-prev" aria-label="Sola kaydır">&#8249;</button>
+          <div class="tab-scroll"></div>
+          <button class="tab-arrow nav-next" aria-label="Sağa kaydır">&#8250;</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Özet Hedef Ekranı</h2><span class="helper">1</span></div>
+        <div class="card-body mini-grid">
+          <div class="summary-box">
+            <div class="summary-line"><span class="k">Günlük Taksitler</span><strong id="ozet-gunluk-taksit">₺0</strong></div>
+            <div class="summary-line"><span class="k">Günlük Faizler</span><strong id="ozet-gunluk-faiz">₺0</strong></div>
+            <div class="summary-line total"><span class="k">Toplam</span><strong id="ozet-toplam">₺0</strong></div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-line"><span class="k">Aylık Kazanç Hedefi</span><strong id="ozet-aylik">₺0</strong></div>
+            <div class="summary-line total"><span class="k">Haftalık Kazanç Hedefi</span><strong id="ozet-haftalik">₺0</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" data-section="taksitler">
+
+      
+      <div class="hero section-hero" style="margin-bottom: 14px;">
+        <div class="title">
+          <h1>Bütçe Pro</h1>
+        </div>
+      </div>
+<div class="tabs tabs-shell">
+        <div class="tab-nav">
+          <button class="tab-arrow nav-prev" aria-label="Sola kaydır">&#8249;</button>
+          <div class="tab-scroll"></div>
+          <button class="tab-arrow nav-next" aria-label="Sağa kaydır">&#8250;</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Taksit Giderleri</h2><span class="helper">1</span></div>
+        <div class="card-body">
+          <div id="installment-list"></div>
+          <div class="summary-box" style="margin-top:14px;">
+            <div class="summary-line total"><span class="k">Toplam</span><strong id="installment-total">₺0</strong></div>
+            <div class="summary-line"><span class="k">Nakit Giderler</span><strong id="cash-total">₺0</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" data-section="borclar">
+
+      
+      <div class="hero section-hero" style="margin-bottom: 14px;">
+        <div class="title">
+          <h1>Bütçe Pro</h1>
+        </div>
+      </div>
+<div class="tabs tabs-shell">
+        <div class="tab-nav">
+          <button class="tab-arrow nav-prev" aria-label="Sola kaydır">&#8249;</button>
+          <div class="tab-scroll"></div>
+          <button class="tab-arrow nav-next" aria-label="Sağa kaydır">&#8250;</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Esnek Hesap / Kredi Kartı</h2><span class="helper">2</span></div>
+        <div class="card-body">
+          <div id="debt-list"></div>
+          <div class="summary-box" style="margin-top:14px;">
+            <div class="summary-line"><span class="k">Esnek Hesap Toplamı</span><strong id="debt-eh-total">₺0</strong></div>
+            <div class="summary-line"><span class="k">Kredi Kartı Borcu Toplamı</span><strong id="debt-kk-total">₺0</strong></div>
+            <div class="summary-line total"><span class="k">Kullanılabilir Limit Toplamı</span><strong id="debt-limit-total">₺0</strong></div>
+            <div class="summary-line total"><span class="k">Borç Toplamı</span><strong id="debt-grand-total">₺0</strong></div>
+          </div>
+</div>
+      </div>
+    </section>
+
+    <section class="section" data-section="faiz">
+
+      
+      <div class="hero section-hero" style="margin-bottom: 14px;">
+        <div class="title">
+          <h1>Bütçe Pro</h1>
+        </div>
+      </div>
+<div class="tabs tabs-shell">
+        <div class="tab-nav">
+          <button class="tab-arrow nav-prev" aria-label="Sola kaydır">&#8249;</button>
+          <div class="tab-scroll"></div>
+          <button class="tab-arrow nav-next" aria-label="Sağa kaydır">&#8250;</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Faiz Hesapları</h2><span class="helper">3</span></div>
+        <div class="card-body">
+          <div class="mini-grid" style="margin-bottom:14px;">
+            <div>
+              <div class="helper" style="margin-bottom:6px;">Alt Oran (%)</div>
+              <input class="input" id="rate-low" inputmode="decimal" />
+            </div>
+            <div>
+              <div class="helper" style="margin-bottom:6px;">Üst Oran (%)</div>
+              <input class="input" id="rate-high" inputmode="decimal" />
+            </div>
+            <div>
+              <div class="helper" style="margin-bottom:6px;">Esnek Hesap Faiz Oranı (%)</div>
+              <input class="input" id="rate-eh" inputmode="decimal" />
+            </div>
+          </div>
+          <div id="interest-list"></div>
+          <div class="summary-box" style="margin-top:14px;">
+            <div class="summary-line"><span class="k">Esnek Hesap Faiz Toplamı</span><strong id="interest-eh-total">₺0</strong></div>
+            <div class="summary-line"><span class="k">Kredi Kartı Faiz Toplamı</span><strong id="interest-kk-total">₺0</strong></div>
+            <div class="summary-line total"><span class="k">Toplam Faiz</span><strong id="interest-grand-total">₺0</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" data-section="altin">
+
+      
+      <div class="hero section-hero" style="margin-bottom: 14px;">
+        <div class="title">
+          <h1>Bütçe Pro</h1>
+        </div>
+      </div>
+<div class="tabs tabs-shell">
+        <div class="tab-nav">
+          <button class="tab-arrow nav-prev" aria-label="Sola kaydır">&#8249;</button>
+          <div class="tab-scroll"></div>
+          <button class="tab-arrow nav-next" aria-label="Sağa kaydır">&#8250;</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Altın / TL Borçları</h2><span class="helper">4</span></div>
+        <div class="card-body">
+          <div id="gold-list"></div>
+</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="footer-actions">
+    <div class="footer-wrap">
+      <button class="action" id="load-btn">📂 Yükle</button>
+      <button class="action primary" id="save-btn">💾 Kaydet + TXT</button>
+      
+      <button class="action" id="reset-btn">↺ Varsayılanı Yükle</button>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'butce-hesaplari-v1';
+    const LAST_BACKUP_KEY = 'butce-last-backup';
+    const defaultData = {
+      "installmentItems": [
+            {
+                  "name": "Serpil Yapıkredi",
+                  "amount": 4262
+            }
+      ],
+      "debtItems": [
+            {
+                  "name": "Yapıkredi",
+                  "eh": 90000,
+                  "availableLimit": 431438,
+                  "cardLimit": 545900,
+                  "threshold": 29300,
+                  "days": 60
+            },
+            {
+                  "name": "Enpara",
+                  "eh": 150000,
+                  "availableLimit": 1000,
+                  "cardLimit": 25000,
+                  "threshold": 27000,
+                  "days": 80
+            }
+      ],
+      "rates": {
+            "low": 3.9,
+            "high": 4.5,
+            "eh": 5.915
+      },
+      "goldItems": [
+            {
+                  "name": "Xxxxx",
+                  "gram": 0,
+                  "quarter": 0,
+                  "tl": 0
+            }
+      ]
+};
+
+    const state = loadState();
+
+    const sections = [
+      { key: 'ozet', label: '🏠' },
+      { key: 'taksitler', label: '📅' },
+      { key: 'borclar', label: '💳' },
+      { key: 'faiz', label: '📈' },
+      { key: 'altin', label: '🥇' }
+    ];
+
+
+
+    function createEmptyInstallmentItem() {
+      return { name: 'Yeni Taksit', amount: 0 };
+    }
+
+    function createEmptyDebtItem() {
+      return { name: 'Yeni Borç', eh: 0, availableLimit: 0, cardLimit: 0, threshold: 27000, days: 80 };
+    }
+
+    function createEmptyGoldItem() {
+      return { name: 'Yeni Altın / TL', gram: 0, quarter: 0, tl: 0 };
+    }
+
+    function insertItem(list, index, item) {
+      if (!Array.isArray(list)) return;
+      const safeIndex = Math.max(0, Math.min(index, list.length));
+      list.splice(safeIndex, 0, item);
+    }
+
+    function moveItem(list, fromIndex, toIndex) {
+      if (!Array.isArray(list)) return;
+      if (fromIndex === toIndex) return;
+      if (fromIndex < 0 || toIndex < 0 || fromIndex >= list.length || toIndex >= list.length) return;
+      const moved = list.splice(fromIndex, 1)[0];
+      list.splice(toIndex, 0, moved);
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return structuredClone(defaultData);
+        const parsed = JSON.parse(raw);
+        return mergeDeep(structuredClone(defaultData), parsed);
+      } catch {
+        return structuredClone(defaultData);
+      }
+    }
+
+    function mergeDeep(target, source) {
+      if (Array.isArray(target) || Array.isArray(source)) return source ?? target;
+      for (const key of Object.keys(source || {})) {
+        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+          target[key] = mergeDeep(target[key] || {}, source[key]);
+        } else {
+          target[key] = source[key];
+        }
+      }
+      return target;
+    }
+
+    function saveState(showMessage = true) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (showMessage) alert('Kaydedildi.');
+    }
+
+    function formatTRY(value) {
+      const n = Number(value) || 0;
+      return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 2 }).format(n);
+    }
+
+
+    function formatPercent(value) {
+      const n = Number(value) || 0;
+      return '%' + String(n).replace('.', ',');
+    }
+
+    function parseNum(value) {
+      if (typeof value === 'number') return value;
+
+      let v = String(value ?? '').replace(/₺/g, '').trim();
+
+      if (v.includes('.') && v.includes(',')) {
+        const lastDot = v.lastIndexOf('.');
+        const lastComma = v.lastIndexOf(',');
+        if (lastComma > lastDot) {
+          v = v.replace(/\./g, '').replace(',', '.');
+        } else {
+          v = v.replace(/,/g, '');
+        }
+      } else if (v.includes(',')) {
+        const commaCount = (v.match(/,/g) || []).length;
+        if (commaCount > 1) {
+          v = v.replace(/,/g, '');
+        } else {
+          const parts = v.split(',');
+          if (parts.length === 2 && parts[1].length <= 2) {
+            v = parts[0].replace(/\./g, '') + '.' + parts[1];
+          } else {
+            v = v.replace(/,/g, '');
+          }
+        }
+      } else if (v.includes('.')) {
+        const dotCount = (v.match(/\./g) || []).length;
+        if (dotCount > 1) {
+          const lastDot = v.lastIndexOf('.');
+          const intPart = v.slice(0, lastDot).replace(/\./g, '');
+          const decPart = v.slice(lastDot + 1);
+          if (decPart.length <= 2) {
+            v = intPart + '.' + decPart;
+          } else {
+            v = v.replace(/\./g, '');
+          }
+        } else {
+          const parts = v.split('.');
+          if (parts.length === 2 && parts[1].length === 3) {
+            v = parts.join('');
+          }
+        }
+      }
+
+      v = v.replace(/[^0-9.-]/g, '');
+      const parsed = Number(v);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function calculate() {
+      const installmentTotal = state.installmentItems.reduce((sum, item) => sum + parseNum(item.amount), 0);
+      const cashTotal = installmentTotal;
+
+      const debtRows = state.debtItems.map(item => {
+        const eh = parseNum(item.eh);
+        const availableLimit = parseNum(item.availableLimit);
+        const cardLimit = parseNum(item.cardLimit);
+        const kkDebt = cardLimit - availableLimit;
+        return { ...item, eh, availableLimit, cardLimit, kkDebt };
+      });
+
+      const ehTotal = debtRows.reduce((sum, item) => sum + item.eh, 0);
+      const kkTotal = debtRows.reduce((sum, item) => sum + item.kkDebt, 0);
+      const availableLimitTotal = debtRows.reduce((sum, item) => sum + item.availableLimit, 0);
+      const debtGrandTotal = ehTotal + kkTotal;
+
+      const low = parseNum(state.rates.low);
+      const high = parseNum(state.rates.high);
+      const ehRate = parseNum(state.rates.eh);
+
+      const interestRows = debtRows.map(item => {
+        const ehInterest = item.eh * (ehRate / 100);
+        const usedRate = item.cardLimit >= 50000 ? 60 : 80;
+        const baseDebt = item.kkDebt * (usedRate / 100);
+        const appliedCardRate = item.kkDebt > 27000 ? high : low;
+        const kkInterest = baseDebt * (appliedCardRate / 100);
+        return { ...item, ehInterest, kkInterest, usedRate, appliedCardRate };
+      });
+
+      const ehInterestTotal = interestRows.reduce((sum, item) => sum + item.ehInterest, 0);
+      const kkInterestTotal = interestRows.reduce((sum, item) => sum + item.kkInterest, 0);
+      const interestGrandTotal = ehInterestTotal + kkInterestTotal;
+
+      const dailyInstallment = installmentTotal / 30;
+      const dailyInterest = interestGrandTotal / 30;
+      const dailyTotal = dailyInstallment + dailyInterest;
+      const monthlyTarget = dailyTotal * 30;
+      const weeklyTarget = monthlyTarget / 4;
+
+      return {
+        installmentTotal,
+        cashTotal,
+        debtRows,
+        ehTotal,
+        kkTotal,
+        availableLimitTotal,
+        debtGrandTotal,
+        interestRows,
+        ehInterestTotal,
+        kkInterestTotal,
+        interestGrandTotal,
+        dailyInstallment,
+        dailyInterest,
+        dailyTotal,
+        monthlyTarget,
+        weeklyTarget
+      };
+    }
+
+    let currentSectionKey = null;
+    const topSummary = document.getElementById('top-summary');
+
+    function hideTopSummary() {
+      if (topSummary) topSummary.classList.add('hidden');
+    }
+
+    function showTopSummary() {
+      if (topSummary) topSummary.classList.remove('hidden');
+    }
+
+    function goHomeFromSection(direction = 'right') {
+      const current = currentSectionKey ? document.querySelector(`.section[data-section="${currentSectionKey}"]`) : null;
+      if (current) {
+        current.classList.remove('active', 'exit-left', 'exit-right', 'enter-left', 'enter-right');
+        current.classList.add(direction === 'right' ? 'exit-right' : 'exit-left');
+      }
+
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+
+      setTimeout(() => {
+        document.querySelectorAll('.section').forEach(sec => {
+          sec.classList.remove('active', 'exit-left', 'exit-right', 'enter-left', 'enter-right');
+        });
+        currentSectionKey = null;
+        showTopSummary();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 320);
+    }
+
+
+    function switchSection(newKey, direction = 'left') {
+      if (!newKey || newKey === currentSectionKey) return;
+
+      const current = currentSectionKey
+        ? document.querySelector(`.section[data-section="${currentSectionKey}"]`)
+        : null;
+      const next = document.querySelector(`.section[data-section="${newKey}"]`);
+      if (!next) return;
+
+      updateActiveTabs(newKey);
+
+      if (newKey === 'ozet') {
+        showTopSummary();
+      } else {
+        hideTopSummary();
+      }
+
+      if (!current) {
+        next.classList.add('active');
+        currentSectionKey = newKey;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      current.classList.remove('active', 'exit-left', 'exit-right', 'enter-left', 'enter-right');
+      next.classList.remove('active', 'exit-left', 'exit-right', 'enter-left', 'enter-right');
+
+      if (direction === 'left') {
+        current.classList.add('exit-left');
+        next.classList.add('enter-right');
+      } else {
+        current.classList.add('exit-right');
+        next.classList.add('enter-left');
+      }
+
+      setTimeout(() => {
+        current.classList.remove('exit-left', 'exit-right');
+        current.classList.remove('active');
+        next.classList.remove('enter-left', 'enter-right');
+        next.classList.add('active');
+        currentSectionKey = newKey;
+      }, 300);
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function buildTabs() {
+      const shells = document.querySelectorAll('.tabs-shell');
+
+      shells.forEach((shell) => {
+        const tabsWrap = shell.querySelector('.tab-scroll');
+        const prevBtn = shell.querySelector('.nav-prev');
+        const nextBtn = shell.querySelector('.nav-next');
+
+        tabsWrap.innerHTML = sections.map((tab) => `<button class="tab" data-tab="${tab.key}">${tab.label}</button>`).join('');
+
+        tabsWrap.querySelectorAll('.tab').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const newIndex = sections.findIndex(s => s.key === btn.dataset.tab);
+            const currentIndex = sections.findIndex(s => s.key === currentSectionKey);
+            const direction = currentIndex === -1 || newIndex > currentIndex ? 'left' : 'right';
+            switchSection(btn.dataset.tab, direction);
+          });
+        });
+
+        if (prevBtn) {
+          prevBtn.onclick = () => {
+            const currentIndex = sections.findIndex(s => s.key === currentSectionKey);
+            const targetIndex = currentIndex <= 0 ? sections.length - 1 : currentIndex - 1;
+            switchSection(sections[targetIndex].key, 'right');
+          };
+        }
+
+        if (nextBtn) {
+          nextBtn.onclick = () => {
+            const currentIndex = sections.findIndex(s => s.key === currentSectionKey);
+            const targetIndex = currentIndex === -1 || currentIndex >= sections.length - 1 ? 0 : currentIndex + 1;
+            switchSection(sections[targetIndex].key, 'left');
+          };
+        }
+      });
+
+      updateActiveTabs(currentSectionKey || 'ozet');
+    }
+
+    function updateActiveTabs(activeKey) {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === activeKey);
+      });
+    }
+
+    function wireSwipe() {
+      const touchArea = document.querySelector('.app');
+      let startX = 0;
+      let startY = 0;
+      let endX = 0;
+      let endY = 0;
+
+      touchArea.addEventListener('touchstart', e => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      }, { passive: true });
+
+      touchArea.addEventListener('touchend', e => {
+        endX = e.changedTouches[0].clientX;
+        endY = e.changedTouches[0].clientY;
+
+        const dx = endX - startX;
+        const dy = endY - startY;
+
+        if (Math.abs(dx) < 65 || Math.abs(dx) <= Math.abs(dy)) return;
+        if (!currentSectionKey) return;
+
+        const currentIndex = sections.findIndex(s => s.key === currentSectionKey);
+        if (currentIndex === -1) return;
+
+        if (dx < 0) {
+          const nextIndex = currentIndex >= sections.length - 1 ? 0 : currentIndex + 1;
+          switchSection(sections[nextIndex].key, 'left');
+          const targetTab = document.querySelector(`.tab[data-tab="${sections[nextIndex].key}"]`);
+        } else {
+          const nextIndex = currentIndex <= 0 ? sections.length - 1 : currentIndex - 1;
+          switchSection(sections[nextIndex].key, 'right');
+          const targetTab = document.querySelector(`.tab[data-tab="${sections[nextIndex].key}"]`);
+        }
+      }, { passive: true });
+    }
+
+    function renderInstallments() {
+      const wrap = document.getElementById('installment-list');
+      wrap.innerHTML = state.installmentItems.map((item, i) => `
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-body">
+            <div class="item-toolbar">
+              <input class="input js-installment-name" data-index="${i}" value="${item.name}" style="margin-bottom:0;" />
+              <div class="item-move-group">
+                <button class="icon-btn move-btn js-move-installment-up" data-index="${i}" type="button" aria-label="Yukarı taşı">↑</button>
+                <button class="icon-btn move-btn js-move-installment-down" data-index="${i}" type="button" aria-label="Aşağı taşı">↓</button>
+                <button class="icon-btn danger js-remove-installment" data-index="${i}" type="button">🗑 Sil</button>
+                <button class="icon-btn js-add-installment-after" data-index="${i}" type="button">＋ Satır Ekle</button>
+              </div>
+            </div>
+            <div>
+              <div class="helper" style="margin-bottom:6px;">Taksit Gideri</div>
+              <input class="input js-installment" data-index="${i}" value="${formatTRY(item.amount)}" inputmode="decimal" />
+            </div>
+          </div>
+        </div>
+      `).join('');
+      wrap.querySelectorAll('.js-installment-name').forEach(input => {
+        input.addEventListener('input', e => {
+          state.installmentItems[Number(e.target.dataset.index)].name = e.target.value;
+          saveState(false);
+        });
+      });
+      wrap.querySelectorAll('.js-installment').forEach(input => {
+        input.addEventListener('input', e => {
+          state.installmentItems[Number(e.target.dataset.index)].amount = parseNum(e.target.value);
+          refresh();
+        });
+      });
+      wrap.querySelectorAll('.js-remove-installment').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          state.installmentItems.splice(index, 1);
+          if (!state.installmentItems.length) state.installmentItems.push(createEmptyInstallmentItem());
+          renderAll();
+          saveState(false);
+        });
+      });
+      wrap.querySelectorAll('.js-add-installment-after').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          insertItem(state.installmentItems, index + 1, createEmptyInstallmentItem());
+          renderAll();
+          saveState(false);
+          switchSection('taksitler', 'left');
+          setTimeout(() => {
+            const names = document.querySelectorAll('.js-installment-name');
+            const target = names[index + 1];
+            if (target) { target.focus(); target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+          }, 50);
+        });
+      });
+      wrap.querySelectorAll('.js-move-installment-up').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          if (index <= 0) return;
+          moveItem(state.installmentItems, index, index - 1);
+          renderAll();
+          saveState(false);
+          switchSection('taksitler', 'right');
+        });
+      });
+      wrap.querySelectorAll('.js-move-installment-down').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          if (index >= state.installmentItems.length - 1) return;
+          moveItem(state.installmentItems, index, index + 1);
+          renderAll();
+          saveState(false);
+          switchSection('taksitler', 'left');
+        });
+      });
+    }
+
+    function renderDebts() {
+      const wrap = document.getElementById('debt-list');
+      wrap.innerHTML = state.debtItems.map((item, i) => `
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-body">
+            <div class="item-toolbar">
+              <input class="input js-debt-name" data-index="${i}" value="${item.name}" style="margin-bottom:0;" />
+              <div class="item-move-group">
+                <button class="icon-btn move-btn js-move-debt-up" data-index="${i}" type="button" aria-label="Yukarı taşı">↑</button>
+                <button class="icon-btn move-btn js-move-debt-down" data-index="${i}" type="button" aria-label="Aşağı taşı">↓</button>
+                <button class="icon-btn danger js-remove-debt" data-index="${i}" type="button">🗑 Sil</button>
+                <button class="icon-btn js-add-debt-after" data-index="${i}" type="button">＋ Satır Ekle</button>
+              </div>
+            </div>
+            <div class="mini-grid">
+              <div>
+                <div class="helper" style="margin-bottom:6px;">Esnek Hesap B.</div>
+                <input class="input js-debt-eh" data-index="${i}" value="${formatTRY(item.eh)}" inputmode="decimal" />
+              </div>
+              <div>
+                <div class="helper" style="margin-bottom:6px;">Kullanılabilir Limit</div>
+                <input class="input js-debt-limit" data-index="${i}" value="${formatTRY(item.availableLimit)}" inputmode="decimal" />
+              </div>
+              <div>
+                <div class="helper" style="margin-bottom:6px;">Kart Limiti</div>
+                <input class="input js-debt-card-limit" data-index="${i}" value="${formatTRY(item.cardLimit)}" inputmode="decimal" />
+              </div>
+              <div>
+                <div class="helper" style="margin-bottom:6px;">Kredi Kartı Borcu</div>
+                <div class="readonly" id="kk-debt-${i}">₺0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      wrap.querySelectorAll('.js-debt-name').forEach(input => {
+        input.addEventListener('input', e => {
+          state.debtItems[Number(e.target.dataset.index)].name = e.target.value;
+          refresh();
+        });
+      });
+      wrap.querySelectorAll('.js-debt-eh').forEach(input => {
+        input.addEventListener('input', e => {
+          state.debtItems[Number(e.target.dataset.index)].eh = parseNum(e.target.value);
+          refresh();
+        });
+      });
+      wrap.querySelectorAll('.js-debt-limit').forEach(input => {
+        input.addEventListener('input', e => {
+          state.debtItems[Number(e.target.dataset.index)].availableLimit = parseNum(e.target.value);
+          refresh();
+        });
+      });
+      wrap.querySelectorAll('.js-debt-card-limit').forEach(input => {
+        input.addEventListener('input', e => {
+          state.debtItems[Number(e.target.dataset.index)].cardLimit = parseNum(e.target.value);
+          refresh();
+        });
+      });
+      wrap.querySelectorAll('.js-add-debt-after').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          insertItem(state.debtItems, index + 1, createEmptyDebtItem());
+          renderAll();
+          saveState(false);
+          switchSection('borclar', 'left');
+          setTimeout(() => {
+            const names = document.querySelectorAll('.js-debt-name');
+            const target = names[index + 1];
+            if (target) { target.focus(); target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+          }, 50);
+        });
+      });
+      wrap.querySelectorAll('.js-remove-debt').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          state.debtItems.splice(index, 1);
+          if (!state.debtItems.length) {
+            state.debtItems.push(createEmptyDebtItem());
+          }
+          renderAll();
+          saveState(false);
+        });
+      });
+      wrap.querySelectorAll('.js-move-debt-up').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          if (index <= 0) return;
+          moveItem(state.debtItems, index, index - 1);
+          renderAll();
+          saveState(false);
+          switchSection('borclar', 'right');
+        });
+      });
+      wrap.querySelectorAll('.js-move-debt-down').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          if (index >= state.debtItems.length - 1) return;
+          moveItem(state.debtItems, index, index + 1);
+          renderAll();
+          saveState(false);
+          switchSection('borclar', 'left');
+        });
+      });
+    }
+
+    function renderInterestInputs() {
+      document.getElementById('rate-low').value = formatPercent(state.rates.low);
+      document.getElementById('rate-high').value = formatPercent(state.rates.high);
+      document.getElementById('rate-eh').value = formatPercent(state.rates.eh);
+      document.getElementById('rate-low').oninput = e => { state.rates.low = parseNum(e.target.value); refresh(); };
+      document.getElementById('rate-high').oninput = e => { state.rates.high = parseNum(e.target.value); refresh(); };
+      document.getElementById('rate-eh').oninput = e => { state.rates.eh = parseNum(e.target.value); refresh(); };
+    }
+
+    function renderInterests(calc) {
+      const wrap = document.getElementById('interest-list');
+      wrap.innerHTML = calc.interestRows.map((item, i) => `
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-body">
+            <div class="name" style="margin-bottom:10px;">${item.name}</div>
+            <div class="mini-grid">
+              <div>
+                <div class="helper">Esnek Hesap Faizi</div>
+                <div class="readonly">${formatTRY(item.ehInterest)}</div>
+              </div>
+              <div>
+                <div class="helper">Kredi Kartı Faizi</div>
+                <div class="readonly">${formatTRY(item.kkInterest)}</div>
+              </div>
+              <div>
+                <div class="helper">K.K. borcu</div>
+                <div class="readonly">${formatTRY(item.kkDebt)}</div>
+              </div>
+              <div>
+                <div class="helper">Kullanılan Faiz Oranları / Asgari Ödeme Oranı</div>
+                <div class="readonly">${formatPercent(state.rates.eh)} - ${formatPercent(item.appliedCardRate)} / %${item.usedRate}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderGolds() {
+      const wrap = document.getElementById('gold-list');
+      wrap.innerHTML = state.goldItems.map((item, i) => `
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-body">
+            <div class="item-toolbar">
+              <input class="input js-gold-name" data-index="${i}" value="${item.name}" style="margin-bottom:0;" />
+              <div class="item-move-group">
+                <button class="icon-btn move-btn js-move-gold-up" data-index="${i}" type="button" aria-label="Yukarı taşı">↑</button>
+                <button class="icon-btn move-btn js-move-gold-down" data-index="${i}" type="button" aria-label="Aşağı taşı">↓</button>
+                <button class="icon-btn danger js-remove-gold" data-index="${i}" type="button">🗑 Sil</button>
+                <button class="icon-btn js-add-gold-after" data-index="${i}" type="button">＋ Satır Ekle</button>
+              </div>
+            </div>
+            <div class="triple-grid">
+              <div>
+                <div class="helper" style="margin-bottom:6px;">Gram Altın</div>
+                <input class="input js-gold-gram" data-index="${i}" value="${item.gram}" inputmode="decimal" />
+              </div>
+              <div>
+                <div class="helper" style="margin-bottom:6px;">Çeyrek Altın</div>
+                <input class="input js-gold-quarter" data-index="${i}" value="${item.quarter}" inputmode="decimal" />
+              </div>
+              <div>
+                <div class="helper" style="margin-bottom:6px;">TL</div>
+                <input class="input js-gold-tl" data-index="${i}" value="${formatTRY(item.tl)}" inputmode="decimal" />
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      wrap.querySelectorAll('.js-gold-name').forEach(input => {
+        input.oninput = e => {
+          state.goldItems[Number(e.target.dataset.index)].name = e.target.value;
+          saveState(false);
+        };
+      });
+      wrap.querySelectorAll('.js-gold-gram').forEach(input => input.oninput = e => { state.goldItems[Number(e.target.dataset.index)].gram = parseNum(e.target.value); saveState(false); });
+      wrap.querySelectorAll('.js-gold-quarter').forEach(input => input.oninput = e => { state.goldItems[Number(e.target.dataset.index)].quarter = parseNum(e.target.value); saveState(false); });
+      wrap.querySelectorAll('.js-gold-tl').forEach(input => input.oninput = e => { state.goldItems[Number(e.target.dataset.index)].tl = parseNum(e.target.value); saveState(false); });
+      wrap.querySelectorAll('.js-add-gold-after').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          insertItem(state.goldItems, index + 1, createEmptyGoldItem());
+          renderAll();
+          saveState(false);
+          switchSection('altin', 'left');
+          setTimeout(() => {
+            const names = document.querySelectorAll('.js-gold-name');
+            const target = names[index + 1];
+            if (target) { target.focus(); target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+          }, 50);
+        });
+      });
+      wrap.querySelectorAll('.js-remove-gold').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          state.goldItems.splice(index, 1);
+          if (!state.goldItems.length) {
+            state.goldItems.push(createEmptyGoldItem());
+          }
+          renderAll();
+          saveState(false);
+        });
+      });
+      wrap.querySelectorAll('.js-move-gold-up').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          if (index <= 0) return;
+          moveItem(state.goldItems, index, index - 1);
+          renderAll();
+          saveState(false);
+          switchSection('altin', 'right');
+        });
+      });
+      wrap.querySelectorAll('.js-move-gold-down').forEach(button => {
+        button.addEventListener('click', e => {
+          const index = Number(e.currentTarget.dataset.index);
+          if (index >= state.goldItems.length - 1) return;
+          moveItem(state.goldItems, index, index + 1);
+          renderAll();
+          saveState(false);
+          switchSection('altin', 'left');
+        });
+      });
+    }
+
+    function refresh() {
+      const calc = calculate();
+
+      document.getElementById('installment-total').textContent = formatTRY(calc.installmentTotal);
+      document.getElementById('cash-total').textContent = formatTRY(calc.cashTotal);
+      document.getElementById('debt-eh-total').textContent = formatTRY(calc.ehTotal);
+      document.getElementById('debt-kk-total').textContent = formatTRY(calc.kkTotal);
+      document.getElementById('debt-limit-total').textContent = formatTRY(calc.availableLimitTotal);
+      document.getElementById('debt-grand-total').textContent = formatTRY(calc.debtGrandTotal);
+      document.getElementById('interest-eh-total').textContent = formatTRY(calc.ehInterestTotal);
+      document.getElementById('interest-kk-total').textContent = formatTRY(calc.kkInterestTotal);
+      document.getElementById('interest-grand-total').textContent = formatTRY(calc.interestGrandTotal);
+
+      document.getElementById('sum-daily-installment').textContent = formatTRY(calc.dailyInstallment);
+      document.getElementById('sum-daily-interest').textContent = formatTRY(calc.dailyInterest);
+      document.getElementById('sum-daily-total').textContent = formatTRY(calc.dailyTotal);
+      document.getElementById('sum-monthly-target').textContent = formatTRY(calc.monthlyTarget);
+      document.getElementById('sum-weekly-target').textContent = formatTRY(calc.weeklyTarget);
+
+      document.getElementById('quick-installment').textContent = formatTRY(calc.installmentTotal);
+      document.getElementById('quick-eh').textContent = formatTRY(calc.ehTotal);
+      document.getElementById('quick-kk').textContent = formatTRY(calc.kkTotal);
+      document.getElementById('quick-limit').textContent = formatTRY(calc.availableLimitTotal);
+      document.getElementById('quick-interest').textContent = formatTRY(calc.interestGrandTotal);
+
+      document.getElementById('ozet-gunluk-taksit').textContent = formatTRY(calc.dailyInstallment);
+      document.getElementById('ozet-gunluk-faiz').textContent = formatTRY(calc.dailyInterest);
+      document.getElementById('ozet-toplam').textContent = formatTRY(calc.dailyTotal);
+      document.getElementById('ozet-aylik').textContent = formatTRY(calc.monthlyTarget);
+      document.getElementById('ozet-haftalik').textContent = formatTRY(calc.weeklyTarget);
+
+      calc.debtRows.forEach((item, i) => {
+        const el = document.getElementById(`kk-debt-${i}`);
+        if (el) el.textContent = formatTRY(item.kkDebt);
+      });
+
+      renderInterests(calc);
+      saveState(false);
+    }
+
+    function wireButtons() {
+
+      document.getElementById('reset-btn').addEventListener('click', () => {
+        if (!confirm('Varsayılan Excel verilerine dönülsün mü?')) return;
+        Object.assign(state, structuredClone(defaultData));
+        
+    // Otomatik son yedeği yükle
+    try {
+      const lastBackup = localStorage.getItem(LAST_BACKUP_KEY);
+      if (lastBackup) {
+        const parsed = JSON.parse(lastBackup);
+        Object.assign(state, parsed);
+      }
+    } catch {}
+
+    renderAll();
+        saveState(true);
+      });
+      
+    }
+
+    function renderAll() {
+      buildTabs();
+      renderInstallments();
+      renderDebts();
+      renderInterestInputs();
+      renderGolds();
+      refresh();
+    }
+
+    
+    // Otomatik son yedeği yükle
+    try {
+      const lastBackup = localStorage.getItem(LAST_BACKUP_KEY);
+      if (lastBackup) {
+        const parsed = JSON.parse(lastBackup);
+        Object.assign(state, parsed);
+      }
+    } catch {}
+
+    renderAll();
+    wireButtons();
+    wireSwipe();
+    switchSection('ozet', 'left');
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+  
+    function downloadBackup() {
+      const data = JSON.stringify(state, null, 2);
+      const blob = new Blob([data], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "butce_yedek.txt";
+      a.click();
+      localStorage.setItem(LAST_BACKUP_KEY, data);
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+
+    function loadBackup(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          const restored = mergeDeep(structuredClone(defaultData), parsed);
+
+          Object.keys(state).forEach(key => delete state[key]);
+          Object.assign(state, restored);
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          localStorage.setItem(LAST_BACKUP_KEY, JSON.stringify(state));
+
+          renderAll();
+          hasUnsavedChanges = false;
+          alert("Yedek yüklendi");
+        } catch {
+          alert("Dosya hatalı");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Otomatik son yedeği yükle
+    try {
+      const lastBackup = localStorage.getItem(LAST_BACKUP_KEY);
+      if (lastBackup) {
+        const parsed = JSON.parse(lastBackup);
+        const restored = mergeDeep(structuredClone(defaultData), parsed);
+        Object.keys(state).forEach(key => delete state[key]);
+        Object.assign(state, restored);
+      }
+    } catch {}
+
+    let hasUnsavedChanges = false;
+
+    function markDirty() {
+      hasUnsavedChanges = true;
+    }
+
+    window.addEventListener('beforeunload', function (e) {
+      if (!hasUnsavedChanges) return;
+      e.preventDefault();
+      e.returnValue = 'Çıkmadan önce TXT yedeği almak ister misin?';
+    });
+
+    document.getElementById('save-btn').onclick = () => {
+      saveState(false);
+      downloadBackup();
+      hasUnsavedChanges = false;
+      alert('Kaydedildi ve TXT yedeği indirildi.');
+    };
+
+    document.getElementById('load-btn').onclick = () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.txt,.json';
+      input.onchange = (e) => {
+        if (e.target.files.length) loadBackup(e.target.files[0]);
+      };
+      input.click();
+    };
+
+    document.addEventListener('input', (e) => {
+      if (e.target.matches('.input')) markDirty();
+    });
+
+    let deferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('install-btn');
+      if (btn && !window.matchMedia('(display-mode: standalone)').matches) btn.hidden = false;
+    });
+
+    document.getElementById('install-btn')?.addEventListener('click', async () => {
+      if (!deferredPrompt) {
+        alert('Chrome menüsünden "Ana ekrana ekle" seçeneğini de kullanabilirsin.');
+        return;
+      }
+      deferredPrompt.prompt();
+      try { await deferredPrompt.userChoice; } catch {}
+      deferredPrompt = null;
+      const btn = document.getElementById('install-btn');
+      if (btn) btn.hidden = true;
+    });
+
+    window.addEventListener('appinstalled', () => {
+      const btn = document.getElementById('install-btn');
+      if (btn) btn.hidden = true;
+    });
+
+
+// === FINAL UX (TEMİZ ÇÖZÜM) ===
+
+// 1) 0 → tıklayınca sil
+document.addEventListener('focusin', (e) => {
+  if (!e.target.classList.contains('input')) return;
+
+  const isRate = e.target.id === 'rate-low' || e.target.id === 'rate-high' || e.target.id === 'rate-eh';
+  const isNumeric = e.target.inputMode === 'decimal' || isRate;
+  if (!isNumeric) return;
+
+  if (isRate) return;
+
+  const rawNum = parseNum(e.target.value);
+
+  if (!rawNum) {
+    e.target.value = '';
+    return;
+  }
+
+  const fixed = rawNum.toFixed(2);
+  if (fixed.endsWith('.00')) {
+    e.target.value = String(Math.trunc(rawNum));
+  } else {
+    e.target.value = fixed;
+  }
+});
+
+// 2) focusout kontrol
+document.addEventListener('focusout', (e) => {
+  if (!e.target.classList.contains('input')) return;
+
+  const isRate = e.target.id === 'rate-low' || e.target.id === 'rate-high' || e.target.id === 'rate-eh';
+  const isNumeric = e.target.inputMode === 'decimal' || isRate;
+  if (!isNumeric) return;
+
+  const section = e.target.closest('[data-section]');
+  const isGoldPage = section && section.dataset.section === 'altin';
+
+  // 🪙 ALTIN SAYFASI
+  if (isGoldPage) {
+    const label = (e.target.parentElement && e.target.parentElement.innerText || '').toLowerCase();
+
+    // SADECE gram & çeyrek düz sayı
+    if (label.includes('gram') || label.includes('çeyrek') || label.includes('ceyrek')) {
+      let val = (e.target.value || '').replace(/[^0-9]/g, '');
+      e.target.value = val || '0';
+      return;
+    }
+  }
+
+  if (isRate) return;
+
+  const num = parseNum(e.target.value);
+  e.target.value = formatTRY(num);
+});
+
+
+
+
+
+// === NAME UX FIX ===
+document.addEventListener('focusin', (e) => {
+  if (!e.target.classList.contains('js-installment-name') &&
+      !e.target.classList.contains('js-debt-name') &&
+      !e.target.classList.contains('js-gold-name')) return;
+
+  e.target.dataset.old = e.target.value;
+
+  if (e.target.value.toLowerCase().startsWith('yeni')) {
+    e.target.value = '';
+  }
+});
+
+document.addEventListener('focusout', (e) => {
+  if (!e.target.classList.contains('js-installment-name') &&
+      !e.target.classList.contains('js-debt-name') &&
+      !e.target.classList.contains('js-gold-name')) return;
+
+  if (!e.target.value.trim()) {
+    e.target.value = e.target.dataset.old || '';
+  }
+});
+
+// === MINIMAL RATE PERCENT FIX ===
+document.addEventListener('focusin', (e) => {
+  if (!e.target || !e.target.classList.contains('input')) return;
+  if (e.target.id === 'rate-low' || e.target.id === 'rate-high' || e.target.id === 'rate-eh') {
+    let val = String(e.target.value || '').replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '');
+    e.target.value = val === '0' ? '' : val;
+  }
+});
+
+document.addEventListener('focusout', (e) => {
+  if (!e.target || !e.target.classList.contains('input')) return;
+
+  if (e.target.id === 'rate-low' || e.target.id === 'rate-high' || e.target.id === 'rate-eh') {
+    let val = String(e.target.value || '').replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '');
+    const num = Number(val) || 0;
+    e.target.value = formatPercent(num);
+    return;
+  }
+});
+
+</script>
+</body>
+</html>
